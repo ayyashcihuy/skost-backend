@@ -3,12 +3,15 @@ import { ICustomer } from "../Interfaces/ICustomer";
 import { CustomerResponse, CustomerRequest } from "../Models/CustomerModel";
 import { DatabaseError } from "../Errors/DatabaseError";
 import { ClientError } from "../Errors/ClientError";
+import * as argon2 from "argon2";
 
 export class CustomerRepository implements ICustomer {
     private readonly pool: Pool;
+    private readonly secret: string;    
 
-    constructor(pool: Pool) {
+    constructor(pool: Pool, secret: string) {
         this.pool = pool;
+        this.secret = secret
     }
     
     public async getCustomer(id: number): Promise<CustomerResponse> {
@@ -53,11 +56,13 @@ export class CustomerRepository implements ICustomer {
         }
     }
 
-    public async createCustomer(customer: CustomerRequest, is_verified: boolean, password?: string): Promise<void> {
+    public async createCustomer(customer: CustomerRequest, is_verified: boolean): Promise<void> {
         try {
+            // for default password
+            const hashedPassword = await argon2.hash(this.secret);
             await this.pool.query(`
                 INSERT INTO customers (full_name, gender, email, phone, occupation, is_verified, password)
-                VALUES (${customer.full_name}, ${customer.gender}, ${customer.email}, ${customer.phone}, ${customer.occupation}, ${is_verified}, ${password})
+                VALUES (${customer.full_name}, ${customer.gender}, ${customer.email}, ${customer.phone}, ${customer.occupation}, ${is_verified}, ${hashedPassword})
             `);
             return;
         } catch (err) {
@@ -88,9 +93,10 @@ export class CustomerRepository implements ICustomer {
 
     public async updateVerifiedCustomer(data: { email: string, password: string}): Promise<void> {
         try {
+            const hashedPassord = await argon2.hash(data.password);
             await this.pool.query(`
                 UPDATE customers
-                SET is_verified = true, password = ${data.password}
+                SET is_verified = true, password = ${hashedPassord}
                 WHERE email = ${data.email}
             `);
             return;
