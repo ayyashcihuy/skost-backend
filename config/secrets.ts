@@ -18,7 +18,8 @@ interface Config {
         user: string;
         password: string;
         secure: boolean;
-    }
+    },
+    secret: string;
 }
 
 export const config: Config = {
@@ -37,5 +38,6 @@ export const config: Config = {
         user: process.env.EMAIL_USERNAME || "",
         password: process.env.EMAIL_PASSWORD || "",
         secure: process.env.ENV === "production", 
-    }
+    },
+    secret: process.env.SECRET || "secret",
 }
