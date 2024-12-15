@@ -84,13 +84,13 @@ class CustomerController {
     
             if (validatedRequestBody.success) {
                 // create customer but with is_verified = false
-                // TODO: password should always empty since we need to generate password after the user verifies the email using otp
                 const customer = this.customerRepository.createCustomer(validatedRequestBody.data, false);
     
                 // generate otp and send the otp to the email
                 const otp = this.otpRepository.generate();
     
                 // TODO: CREATE SERVICE FOR EMAIL AND OTP SERVICES
+                
                 // save initial user and otp in session
                 await Promise.all([
                     customer, 
