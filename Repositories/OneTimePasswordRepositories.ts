@@ -34,7 +34,7 @@ export class OneTimePasswordRepository implements IOneTimePasswordRepository {
         return randomBytes(3).toString("hex").toUpperCase().slice(0, 5);
     }
 
-    async save(email: string, otp: string, signal?: AbortSignal): Promise<void> {
+    async save(email: string, otp: string, _signal?: AbortSignal): Promise<void> {
         const hashedOtp = await argon2.hash(otp);
 
         // set expires_at to 5 mins
@@ -42,7 +42,8 @@ export class OneTimePasswordRepository implements IOneTimePasswordRepository {
         expires_at.setMinutes(expires_at.getMinutes() + 5);
 
         await this.pool.query(`
-            INSERT INTO otp_session ()
-            `)
+            INSERT INTO otp_session (email, otp_code, expires_at)
+            VALUES (${email}, ${hashedOtp}, ${expires_at})
+        `);
     }
 }
