@@ -45,3 +45,7 @@ export const revertMigration = async () => {
         throw new DatabaseError(`Error reverting migration: ${err}`);
     }
 }
+
+// Uncomment the following line to revert the migration
+// revertMigration();
+// runMigration();

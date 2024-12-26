@@ -39,6 +39,6 @@ export const errorHandler = (
 
     res.status(statusCode).json({
         status: statusCode,
-        message: message,
+        message: err.message,
     });
 }
