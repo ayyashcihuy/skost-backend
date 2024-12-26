@@ -27,8 +27,10 @@ export const CustomerPasswordRequestSchema = z.object({
     }).max(16, {
         message: "Password must be at most 100 characters long"
     }),
-    otp: z.string().min(6, {
-        message: "OTP must be at least 6 characters long"
+    otp: z.string().min(5, {
+        message: "OTP must be at least 5 characters long"
+    }).max(5, {
+        message: "OTP must be at most 5 characters long"
     })
 });
 

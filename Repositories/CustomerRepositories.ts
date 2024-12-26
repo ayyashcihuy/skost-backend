@@ -62,11 +62,24 @@ export class CustomerRepository implements ICustomer {
             const hashedPassword = await argon2.hash(this.secret);
             await this.pool.query(`
                 INSERT INTO customers (full_name, gender, email, phone, occupation, is_verified, password)
-                VALUES (${customer.full_name}, ${customer.gender}, ${customer.email}, ${customer.phone}, ${customer.occupation}, ${is_verified}, ${hashedPassword})
+                VALUES ('${customer.full_name}', '${customer.gender}', '${customer.email}', '${customer.phone}', '${customer.occupation}', ${is_verified}, '${hashedPassword}')
+                ON CONFLICT (email) DO UPDATE SET full_name = '${customer.full_name}', gender = '${customer.gender}', phone = '${customer.phone}', occupation = '${customer.occupation}', is_verified = ${is_verified}
             `);
             return;
         } catch (err) {
             throw new DatabaseError(`Failed to create customer: ${err}`);
+        }
+    }
+
+    public async isVerified(email: string): Promise<boolean> {
+        try {
+            const verified = await this.pool.query(`
+                SELECT is_verified FROM customers WHERE email = '${email}'
+            `);
+
+            return verified.rows[0].is_verified;
+        } catch (err) {
+            throw new DatabaseError(`Failed to check if customer is verified: ${err}`);
         }
     }
 
@@ -96,8 +109,8 @@ export class CustomerRepository implements ICustomer {
             const hashedPassord = await argon2.hash(data.password);
             await this.pool.query(`
                 UPDATE customers
-                SET is_verified = true, password = ${hashedPassord}
-                WHERE email = ${data.email}
+                SET is_verified = true, password = '${hashedPassord}'
+                WHERE email = '${data.email}'
             `);
             return;
         } catch (err) {

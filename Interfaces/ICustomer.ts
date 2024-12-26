@@ -1,6 +1,7 @@
 import { CustomerRequest, CustomerResponse } from "../Models/CustomerModel";
 
 export interface ICustomer {
+    isVerified(email: string): Promise<boolean>;
     getCustomer(id: number): Promise<CustomerResponse>;
     getAllCustomer(): Promise<CustomerResponse[]>;
     createCustomer(customer: CustomerRequest, is_verified: boolean): Promise<void>;

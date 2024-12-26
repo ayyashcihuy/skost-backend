@@ -1,17 +1,20 @@
-import e, { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { CustomerPasswordRequestSchema, CustomerRequestSchema } from "../Models/CustomerModel";
 import { ICustomer } from "../Interfaces/ICustomer";
 import { Issue, ValidationError } from "../Errors/ValidationError";
 import { IOneTimePasswordRepository } from "../Interfaces/IOneTimePassword";
 import { ClientError } from "../Errors/ClientError";
+import { IEmailRepository } from "../Interfaces/IEmailSender";
 
 class CustomerController {
     private readonly customerRepository: ICustomer;
     private readonly otpRepository: IOneTimePasswordRepository;
+    private readonly emailRepository: IEmailRepository;
 
-    constructor(customerRepository: ICustomer, otp: IOneTimePasswordRepository) {
+    constructor(customerRepository: ICustomer, otp: IOneTimePasswordRepository, emailRepository: IEmailRepository) {
         this.customerRepository = customerRepository;
         this.otpRepository = otp;
+        this.emailRepository = emailRepository;
     }
 
     public async getCustomer(req: Request, res: Response, next: NextFunction) {
@@ -83,23 +86,37 @@ class CustomerController {
             const validatedRequestBody = CustomerRequestSchema.safeParse(rawRequestBody);
     
             if (validatedRequestBody.success) {
+                // check if customer is already verified
+                const isVerified = await this.customerRepository.isVerified(validatedRequestBody.data.email);
+
+                if (isVerified) {
+                    next(new ClientError("Customer is already created"));
+                    return;
+                }
+
                 // create customer but with is_verified = false
                 const customer = this.customerRepository.createCustomer(validatedRequestBody.data, false);
     
                 // generate otp and send the otp to the email
                 const otp = this.otpRepository.generate();
-    
-                // TODO: CREATE SERVICE FOR EMAIL AND OTP SERVICES
+
+                const sendEmail = this.emailRepository.sendEmail({
+                    to: validatedRequestBody.data.email,
+                    subject: "Verify your account",
+                    body: `Your OTP is ${otp}. Please enter it to verify your account.`
+                })
                 
                 // save initial user and otp in session
                 await Promise.all([
+                    this.otpRepository.save(validatedRequestBody.data.email, otp),
                     customer, 
-                    this.otpRepository.save(validatedRequestBody.data.email, otp)
+                    sendEmail
                 ]);
     
                 res.status(200).json({
                     message: "Customer created successfully, kindly check email for otp confirmation"
                 });
+                
                 return;
             } else {
                 if (!validatedRequestBody.success) {
@@ -159,6 +176,44 @@ class CustomerController {
             }
         } catch (err) { 
             next(err); 
+        }
+    }
+
+    public async refreshOtp(req: Request, res: Response, next: NextFunction) {
+        try {
+            const email = req.body.email;
+
+            if (email == null) {
+                next(new ClientError("Email is required"));
+                return;
+            }
+
+            // check if customer is already verified
+            const isVerified = await this.customerRepository.isVerified(email);
+
+            if (isVerified) {
+                next(new ClientError("Customer is verified!"));
+                return;
+            }
+
+            const otp = this.otpRepository.generate();
+
+            const sendEmail = this.emailRepository.sendEmail({
+                to: email,
+                subject: "Verify your account",
+                body: `Your OTP is ${otp}. Please enter it to verify your account.`
+            })
+            
+            await Promise.all([
+                this.otpRepository.save(email, otp),
+                sendEmail
+            ]);
+
+            res.status(200).json({
+                message: "OTP refreshed successfully"
+            });
+        } catch (err) {
+            next(err);
         }
     }
 }

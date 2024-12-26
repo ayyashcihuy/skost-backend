@@ -18,6 +18,7 @@ interface Config {
         user: string;
         password: string;
         secure: boolean;
+        formAddress: string;
     },
     secret: string;
 }
@@ -38,6 +39,7 @@ export const config: Config = {
         user: process.env.EMAIL_USERNAME || "",
         password: process.env.EMAIL_PASSWORD || "",
         secure: process.env.ENV === "production", 
+        formAddress: process.env.EMAIL_FORM_ADDRESS || "support@skost.com",
     },
     secret: process.env.SECRET || "secret",
 }
