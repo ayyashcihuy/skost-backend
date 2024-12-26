@@ -7,19 +7,19 @@ import * as argon2 from "argon2";
 
 export class CustomerRepository implements ICustomer {
     private readonly pool: Pool;
-    private readonly secret: string;    
+    private readonly secret: string;
 
     constructor(pool: Pool, secret: string) {
         this.pool = pool;
         this.secret = secret
     }
-    
+
     public async getCustomer(id: number): Promise<CustomerResponse> {
         try {
             const customer = await this.pool.query(`
                 SELECT * FROM customers WHERE id = ${id}
             `);
-    
+
             if (customer.rowCount === 0) {
                 throw new ClientError(`Customer with id ${id} not found`);
             }
@@ -36,7 +36,7 @@ export class CustomerRepository implements ICustomer {
             throw new DatabaseError(`Failed to get customer: ${err}`);
         }
     }
-    
+
     public async getAllCustomer(): Promise<CustomerResponse[]> {
         try {
             const customers = await this.pool.query(`
@@ -83,6 +83,18 @@ export class CustomerRepository implements ICustomer {
         }
     }
 
+    public async verifyPassword(email: string, inputPassword: string): Promise<boolean> {
+        try {
+            const hashedPassword = await this.pool.query(`
+                SELECT password FROM customers WHERE email = '${email}'
+            `);
+
+            return await argon2.verify(inputPassword, hashedPassword.rows[0].password);
+        } catch (err) {
+            throw new DatabaseError(`Failed to verify password: ${err}`);
+        }
+    }
+
     public async updateCustomer(customer: Partial<CustomerRequest>, id: number): Promise<CustomerResponse> {
         try {
             const updatedData = await this.pool.query(`
@@ -104,7 +116,7 @@ export class CustomerRepository implements ICustomer {
         }
     }
 
-    public async updateVerifiedCustomer(data: { email: string, password: string}): Promise<void> {
+    public async updateVerifiedCustomer(data: { email: string, password: string }): Promise<void> {
         try {
             const hashedPassord = await argon2.hash(data.password);
             await this.pool.query(`

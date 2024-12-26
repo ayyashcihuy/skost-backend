@@ -1,7 +1,7 @@
 import { Router } from "express";
 import CustomerController from "../Controllers/CustomerController";
 
-export function CustomerRoutes(controller: CustomerController): Router { 
+export function CustomerRoutes(controller: CustomerController): Router {
     const router = Router();
 
     router.post("/register", (req, res, next) => controller.createCustomer(req, res, next));

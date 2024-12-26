@@ -3,6 +3,7 @@ import { DatabaseError } from "../Errors/DatabaseError";
 import { EmptyArgumentError } from "../Errors/EmptyArgumentError";
 import { ValidationError } from "../Errors/ValidationError";
 import { NotFoundApi } from "../Errors/UnhandledResponse";
+import { AuthenticationError } from "../Errors/AuthenticationError";
 
 export const errorHandler = (
     err: Error,
@@ -34,6 +35,12 @@ export const errorHandler = (
     // Unhandled Response
     if (err instanceof NotFoundApi) {
         statusCode = 404;
+        message = err.message;
+    }
+
+    // Authentication Error
+    if (err instanceof AuthenticationError) {
+        statusCode = err.code;
         message = err.message;
     }
 

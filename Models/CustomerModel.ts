@@ -34,6 +34,15 @@ export const CustomerPasswordRequestSchema = z.object({
     })
 });
 
+export const CustomerLoginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(8, {
+        message: "Password must be at least 8 characters long"
+    }).max(16, {
+        message: "Password must be at most 100 characters long"
+    })
+});
+
 export const CustomerResponseSchema = z.object({
     id: z.number(),
     full_name: z.string(),
